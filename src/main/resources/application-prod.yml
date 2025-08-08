@@ -1,0 +1,27 @@
+spring:
+  application:
+    name: boombim-openapi-prod
+
+  config:
+    import:
+      - file:env/prod.env[.properties]
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        default_schema: boombim
+
+
+  servlet:
+    multipart:
+      enabled: true
+      max-request-size: 30MB
+      max-file-size: 30MB
+
+
