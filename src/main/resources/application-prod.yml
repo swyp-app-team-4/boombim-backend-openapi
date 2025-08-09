@@ -1,0 +1,13 @@
+spring:
+
+  config:
+    import:
+      - file:env/prod.env[.properties]
+
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
+
+open-api:
+  api-key: ${API_KEY}
