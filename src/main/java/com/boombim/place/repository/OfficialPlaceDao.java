@@ -20,10 +20,10 @@ public class OfficialPlaceDao {
     ) {
 
         String sql = """
-            INSERT INTO official_place (name, poi_code, centroid_latitude, centroid_longitude, polygon_coordinates)
-            VALUES (?, ?, ?, ?, ?::jsonb)
-            ON CONFLICT (poi_code) DO NOTHING
-        """;
+                INSERT INTO official_place (name, poi_code, centroid_latitude, centroid_longitude, polygon_coordinates)
+                VALUES (?, ?, ?, ?, ?::jsonb)
+                ON CONFLICT (poi_code) DO NOTHING
+            """;
 
         List<Object[]> batchArgs = officialPlaces.stream()
             .map(officialPlace -> {
@@ -46,6 +46,13 @@ public class OfficialPlaceDao {
             }).toList();
 
         jdbcTemplate.batchUpdate(sql, batchArgs);
+    }
+
+    public List<String> findAllPoiCodes() {
+        return jdbcTemplate.queryForList(
+            "SELECT poi_code FROM official_place WHERE poi_code IS NOT NULL",
+            String.class
+        );
     }
 
 }
