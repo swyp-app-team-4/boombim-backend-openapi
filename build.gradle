@@ -27,6 +27,9 @@ dependencies {
     // web
     implementation 'org.springframework.boot:spring-boot-starter-web'
 
+    // web client
+    implementation 'org.springframework.boot:spring-boot-starter-webflux'
+
     // jdbc
     implementation 'org.springframework.boot:spring-boot-starter-jdbc'
 
