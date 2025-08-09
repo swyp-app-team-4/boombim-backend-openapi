@@ -1,5 +1,10 @@
 package com.boombim.common.properties;
 
-public record OpenApiProperties() {
+import org.springframework.boot.context.properties.ConfigurationProperties;
+
+@ConfigurationProperties(prefix = "open-api")
+public record OpenApiProperties(
+    String apiKey
+) {
 
 }
