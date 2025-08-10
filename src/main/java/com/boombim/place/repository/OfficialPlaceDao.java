@@ -15,12 +15,12 @@ public class OfficialPlaceDao {
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
 
-    public void saveAll(
+    public void initialize(
         List<OfficialPlaceDto> officialPlaces
     ) {
 
         String sql = """
-                INSERT INTO official_place (name, poi_code, centroid_latitude, centroid_longitude, polygon_coordinates)
+                INSERT INTO official_places (name, poi_code, centroid_latitude, centroid_longitude, polygon_coordinates)
                 VALUES (?, ?, ?, ?, ?::jsonb)
                 ON CONFLICT (poi_code) DO NOTHING
             """;

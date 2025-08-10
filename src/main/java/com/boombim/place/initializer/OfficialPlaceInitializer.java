@@ -84,7 +84,7 @@ public class OfficialPlaceInitializer implements CommandLineRunner {
             ));
         }
 
-        officialPlaceDao.saveAll(result);
+        officialPlaceDao.initialize(result);
         log.info("{} official places inserted.", result.size());
     }
 
