@@ -29,8 +29,6 @@ public class OpenApiClient {
 
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             try {
-                log.info("[OpenApiClient] fetch {} {}/{}", poiCode, attempt + 1, MAX_ATTEMPTS);
-
                 OpenApiResponse response = webClient.get()
                     .uri(endpoint)
                     .accept(MediaType.APPLICATION_JSON)
