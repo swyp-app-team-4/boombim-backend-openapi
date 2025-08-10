@@ -50,7 +50,7 @@ public class OfficialPlaceDao {
 
     public List<String> findAllPoiCodes() {
         return jdbcTemplate.queryForList(
-            "SELECT poi_code FROM official_place WHERE poi_code IS NOT NULL",
+            "SELECT poi_code FROM official_places WHERE poi_code IS NOT NULL",
             String.class
         );
     }
