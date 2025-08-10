@@ -25,7 +25,7 @@ public class OfficialCongestionDao {
      * @return 생성된 official_congestions 테이블의 id
      */
     public Long save(
-        String poiCode,
+        Long officialPlaceId,
         Integer congestionLevelId,
         Long populationMin,
         Long populationMax,
@@ -34,7 +34,7 @@ public class OfficialCongestionDao {
 
         String sql = """
             INSERT INTO official_congestions (
-                poi_code, congestion_level_id, population_min, population_max, observed_at
+                official_place_id, congestion_level_id, population_min, population_max, observed_at
             ) VALUES (?, ?, ?, ?, ?)
             """;
 
@@ -42,7 +42,7 @@ public class OfficialCongestionDao {
 
         jdbcTemplate.update(connection -> {
             PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
-            ps.setString(1, poiCode);
+            ps.setLong(1, officialPlaceId);
             ps.setInt(2, congestionLevelId);
             ps.setObject(3, populationMin);
             ps.setObject(4, populationMax);
