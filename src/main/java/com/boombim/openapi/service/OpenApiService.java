@@ -8,7 +8,7 @@ import com.boombim.congestion.repository.OfficialCongestionForecastDao;
 import com.boombim.openapi.OpenApiClient;
 import com.boombim.openapi.dto.OpenApiResponse;
 import com.boombim.openapi.dto.OpenApiResponse.CityDataItem;
-import com.boombim.place.repository.OfficialPlaceDao;
+import com.boombim.place.OfficialPlaceCache;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -22,8 +22,8 @@ import org.springframework.transaction.annotation.Transactional;
 public class OpenApiService {
 
     private final OpenApiClient openApiClient;
-    private final OfficialPlaceDao officialPlaceDao;
     private final CongestionLevelDao congestionLevelDao;
+    private final OfficialPlaceCache officialPlaceCache;
     private final OfficialCongestionDao officialCongestionDao;
     private final OfficialCongestionForecastDao officialCongestionForecastDao;
     private final OfficialCongestionDemographicDao officialCongestionDemographicDao;
@@ -34,10 +34,20 @@ public class OpenApiService {
     @Transactional
     public void fetchAndSave() {
 
-        // TODO: 서버 최초 실행시 조회해서 메모리에 띄워놓고 관리하는 방식으로 리팩터링
-        List<String> poiCodes = officialPlaceDao.findAllPoiCodes();
+        List<String> poiCodes = officialPlaceCache.getAllPoiCodes();
+        int fetchCount = 1;
 
         for (String poiCode : poiCodes) {
+
+            log.info("Fetch {}/{}", fetchCount++, poiCodes.size());
+
+            Long officialPlaceId = officialPlaceCache.getOfficialPlaceId(poiCode).orElse(null);
+
+            if (officialPlaceId == null) {
+                log.warn("{} - 해당하는 officialPlaceId 찾지 못함!", poiCode);
+                continue;
+            }
+
             OpenApiResponse response = openApiClient.fetch(poiCode);
             if (response == null || response.citydataPpltn() == null) {
                 log.warn("POI 코드 '{}'에 대한 API 응답이 없습니다.", poiCode);
@@ -59,7 +69,7 @@ public class OpenApiService {
                 }
 
                 Long officialCongestionId = officialCongestionDao.save(
-                    item.areaCode(),
+                    officialPlaceId,
                     congestionLevelId,
                     item.populationMinimum(),
                     item.populationMaximum(),
@@ -69,7 +79,7 @@ public class OpenApiService {
                 List<OfficialCongestionDemographicInfoDto> demographics = convertToDemographics(item);
                 officialCongestionDemographicDao.saveAll(officialCongestionId, demographics);
 
-                saveForecasts(item, poiCode);
+                saveForecasts(item, officialPlaceId);
             }
         }
     }
@@ -77,7 +87,10 @@ public class OpenApiService {
     /**
      * 예측 데이터를 저장하는 로직을 별도 메서드로 분리
      */
-    private void saveForecasts(CityDataItem item, String poiCode) {
+    private void saveForecasts(
+        CityDataItem item,
+        Long officialPlaceId
+    ) {
         if (item.forecast() == null || item.forecast().isEmpty()) {
             return;
         }
@@ -85,20 +98,19 @@ public class OpenApiService {
         List<Object[]> forecastBatchArgs = new ArrayList<>();
         for (OpenApiResponse.CityDataItem.ForecastItem forecastItem : item.forecast()) {
 
-            Integer forecastLevelId = congestionLevelDao.findIdByName(forecastItem.forecastCongestLevel())
+            Integer forecastLevelId = congestionLevelDao
+                .findIdByName(forecastItem.forecastCongestLevel())
                 .orElse(null);
 
             if (forecastLevelId != null) {
                 forecastBatchArgs.add(new Object[]{
-                    poiCode,
+                    officialPlaceId,
                     item.populationTime(),
                     forecastItem.forecastTime(),
                     forecastLevelId,
                     forecastItem.forecastPopulationMinimum(),
                     forecastItem.forecastPopulationMaximum()
                 });
-            } else {
-                log.warn("알 수 없는 예측 혼잡도 레벨 '{}' (poiCode: {}). 이 예측은 건너뜁니다.", forecastItem.forecastCongestLevel(), poiCode);
             }
         }
         officialCongestionForecastDao.saveAll(forecastBatchArgs);
@@ -107,7 +119,9 @@ public class OpenApiService {
     /**
      * Open API 응답 아이템을 인구통계 데이터 리스트로 변환하는 메서드
      */
-    private List<OfficialCongestionDemographicInfoDto> convertToDemographics(OpenApiResponse.CityDataItem item) {
+    private List<OfficialCongestionDemographicInfoDto> convertToDemographics(
+        CityDataItem item
+    ) {
         List<OfficialCongestionDemographicInfoDto> list = new ArrayList<>();
         list.add(new OfficialCongestionDemographicInfoDto("GENDER", "MALE", item.malePopulationRate()));
         list.add(new OfficialCongestionDemographicInfoDto("GENDER", "FEMALE", item.femalePopulationRate()));
