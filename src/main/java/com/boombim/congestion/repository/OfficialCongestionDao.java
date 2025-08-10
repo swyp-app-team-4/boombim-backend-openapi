@@ -1,9 +1,11 @@
 package com.boombim.congestion.repository;
 
-import com.boombim.openapi.dto.OpenApiResponse.CityDataItem;
-import java.util.List;
+import java.sql.PreparedStatement;
+import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 
 @Repository
@@ -12,47 +14,47 @@ public class OfficialCongestionDao {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public void saveAll(
-        List<CityDataItem> items
+    /**
+     * 하나의 혼잡도 데이터를 저장하고, 자동 생성된 PK(id)를 반환
+     *
+     * @param poiCode           장소 코드
+     * @param congestionLevelId 혼잡도 수준 ID
+     * @param populationMin     최소 인구
+     * @param populationMax     최대 인구
+     * @param observedAt        관측 시각
+     * @return 생성된 official_congestions 테이블의 id
+     */
+    public Long save(
+        String poiCode,
+        Integer congestionLevelId,
+        Long populationMin,
+        Long populationMax,
+        LocalDateTime observedAt
     ) {
+
         String sql = """
-            INSERT INTO official_congestion (
-                poi_code, congestion_level, congestion_message,
-                population_min, population_max,
-                male_population_rate, female_population_rate,
-                population_rate_0, population_rate_10, population_rate_20, population_rate_30,
-                population_rate_40, population_rate_50, population_rate_60, population_rate_70,
-                resident_population_rate, non_resident_population_rate,
-                observed_at
-            )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO official_congestions (
+                poi_code, congestion_level_id, population_min, population_max, observed_at
+            ) VALUES (?, ?, ?, ?, ?)
             """;
 
-        List<Object[]> batchArgs = items.stream()
-            .map(item -> new Object[]{
-                item.areaCode(),
-                item.congestionLevel(),
-                item.congestionMessage(),
-                item.populationMinimum(),
-                item.populationMaximum(),
-                item.malePopulationRate(),
-                item.femalePopulationRate(),
-                item.populationRate0(),
-                item.populationRate10(),
-                item.populationRate20(),
-                item.populationRate30(),
-                item.populationRate40(),
-                item.populationRate50(),
-                item.populationRate60(),
-                item.populationRate70(),
-                item.residentPopulationRate(),
-                item.nonResidentPopulationRate(),
-                item.populationTime()
-            })
-            .toList();
+        KeyHolder keyHolder = new GeneratedKeyHolder();
 
-        jdbcTemplate.batchUpdate(sql, batchArgs);
+        jdbcTemplate.update(connection -> {
+            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+            ps.setString(1, poiCode);
+            ps.setInt(2, congestionLevelId);
+            ps.setObject(3, populationMin);
+            ps.setObject(4, populationMax);
+            ps.setObject(5, observedAt);
+            return ps;
+        }, keyHolder);
 
+        Number key = keyHolder.getKey();
+        if (key == null) {
+            throw new IllegalStateException("Failed to retrieve generated key for official_congestions.");
+        }
+
+        return key.longValue();
     }
-
 }
