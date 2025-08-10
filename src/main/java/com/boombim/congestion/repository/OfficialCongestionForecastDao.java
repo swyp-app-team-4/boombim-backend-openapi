@@ -1,7 +1,5 @@
 package com.boombim.congestion.repository;
 
-import com.boombim.openapi.dto.OpenApiResponse.CityDataItem.ForecastItem;
-import java.time.LocalDateTime;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -13,32 +11,24 @@ public class OfficialCongestionForecastDao {
 
     private final JdbcTemplate jdbcTemplate;
 
-    public void saveAll(
-        List<ForecastItem> items,
-        LocalDateTime observedAt,
-        String poiCode
-    ) {
+    /**
+     * 예측 데이터를 일괄 저장
+     *
+     * @param batchArgs 서비스 계층에서 모든 파라미터가 준비된 Object 배열 리스트
+     */
+    public void saveAll(List<Object[]> batchArgs) {
+        if (batchArgs == null || batchArgs.isEmpty()) {
+            return;
+        }
 
         String sql = """
-            INSERT INTO official_congestion_forecast (
-                poi_code, observed_at, forecast_time, forecast_congestion_level,
+            INSERT INTO official_congestion_forecasts (
+                poi_code, observed_at, forecast_time, forecast_congestion_level_id,
                 forecast_population_min, forecast_population_max
             )
             VALUES (?, ?, ?, ?, ?, ?)
             """;
 
-        List<Object[]> batchArgs = items.stream()
-            .map(item -> new Object[]{
-                poiCode,
-                observedAt,
-                item.forecastTime(),
-                item.forecastCongestLevel(),
-                item.forecastPopulationMinimum(),
-                item.forecastPopulationMaximum()
-            })
-            .toList();
-
         jdbcTemplate.batchUpdate(sql, batchArgs);
     }
-
 }
