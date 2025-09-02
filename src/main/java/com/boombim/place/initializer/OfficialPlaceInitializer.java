@@ -2,6 +2,7 @@ package com.boombim.place.initializer;
 
 import static com.boombim.common.constant.OfficialPlaceConstant.*;
 
+import com.boombim.openapi.service.OfficialPlaceImageService;
 import com.boombim.place.dto.OfficialPlaceDto;
 import com.boombim.place.repository.OfficialPlaceDao;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -28,6 +29,7 @@ public class OfficialPlaceInitializer implements CommandLineRunner {
     private final ObjectMapper objectMapper;
     private final GeometryFactory geometryFactory;
     private final OfficialPlaceDao officialPlaceDao;
+    private final OfficialPlaceImageService imageService;
 
     @Override
     public void run(String... args) throws Exception {
@@ -43,37 +45,26 @@ public class OfficialPlaceInitializer implements CommandLineRunner {
 
             String name = propertiesNode.get(AREA_NM).asText();
             String poiCode = propertiesNode.get(AREA_CD).asText();
-//            String category = propertiesNode.get(CATEGORY).asText();
 
-            // GeoJson Polygon
-            JsonNode ringNode = geometryNode.get(COORDINATES).get(FIRST_INDEX);
+            JsonNode ringNode = geometryNode.get(COORDINATES).get(0);
 
-            // 앱단에 내려줄 좌표 - jsonb로 저장
             List<List<Double>> polygonCoordinates = new ArrayList<>();
-
-            // JTS
             List<Coordinate> jtsCoordinates = new ArrayList<>();
 
             for (JsonNode pair : ringNode) {
-                double longitude = pair.get(LNG).asDouble();
-                double latitude = pair.get(LAT).asDouble();
+                double longitude = pair.get(0).asDouble();
+                double latitude = pair.get(1).asDouble();
                 polygonCoordinates.add(List.of(longitude, latitude));
                 jtsCoordinates.add(new Coordinate(longitude, latitude));
             }
 
-            double centroidLatitude;  // 중심 위도
-            double centroidLongitude; // 중심 경도
-
-            int size = jtsCoordinates.size();
-
             LinearRing linearRing = geometryFactory
-                .createLinearRing(jtsCoordinates.toArray(new Coordinate[size]));
-
+                .createLinearRing(jtsCoordinates.toArray(new Coordinate[0]));
             Polygon polygon = geometryFactory.createPolygon(linearRing, null);
 
             Point centroid = polygon.getCentroid();
-            centroidLatitude = centroid.getY();
-            centroidLongitude = centroid.getX();
+            double centroidLatitude = centroid.getY();
+            double centroidLongitude = centroid.getX();
 
             result.add(OfficialPlaceDto.of(
                 name,
@@ -86,6 +77,8 @@ public class OfficialPlaceInitializer implements CommandLineRunner {
 
         officialPlaceDao.initialize(result);
         log.info("{} official places inserted.", result.size());
-    }
 
+        imageService.syncAll();
+        log.info("Official place images synced.");
+    }
 }
