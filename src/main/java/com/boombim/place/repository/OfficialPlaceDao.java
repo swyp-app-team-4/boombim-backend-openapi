@@ -17,18 +17,18 @@ public class OfficialPlaceDao {
 
     public void initialize(List<OfficialPlaceDto> officialPlaces) {
 
-        // address, area_m2 포함 + 충돌 시 갱신
+        // legal_dong, area_m2 포함 + 충돌 시 갱신
         String sql = """
             INSERT INTO official_places
-              (name, poi_code, address, centroid_latitude, centroid_longitude, polygon_coordinates, area_m2)
-            VALUES (?, ?, ?, ?, ?, ?::jsonb, ?)
+              (name, poi_code, legal_dong, area_m2, centroid_latitude, centroid_longitude, polygon_coordinates)
+            VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)
             ON CONFLICT (poi_code) DO UPDATE
             SET name                = EXCLUDED.name,
-                address             = EXCLUDED.address,
+                legal_dong          = EXCLUDED.legal_dong,
+                area_m2             = EXCLUDED.area_m2,
                 centroid_latitude   = EXCLUDED.centroid_latitude,
                 centroid_longitude  = EXCLUDED.centroid_longitude,
-                polygon_coordinates = EXCLUDED.polygon_coordinates,
-                area_m2             = EXCLUDED.area_m2
+                polygon_coordinates = EXCLUDED.polygon_coordinates
             """;
 
         List<Object[]> batchArgs = officialPlaces.stream()
@@ -38,11 +38,11 @@ public class OfficialPlaceDao {
                     return new Object[]{
                         p.name(),
                         p.poiCode(),
-                        p.address(),            // 반드시 non-null (ex. "알수없음")
+                        p.legalDong(),          // 반드시 non-null (예: "알수없음")
+                        p.areaM2(),             // NOT NULL 권장
                         p.centroidLatitude(),
                         p.centroidLongitude(),
-                        json,                   // jsonb 캐스팅은 SQL에서
-                        p.areaM2()              // NOT NULL 컬럼이면 0보다 큰 값
+                        json                    // jsonb 캐스팅은 SQL에서
                     };
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException("좌표 직렬화 실패", e);
