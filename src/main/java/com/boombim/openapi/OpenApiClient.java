@@ -16,7 +16,7 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class OpenApiClient {
 
-    private final WebClient webClient;
+    private final WebClient openApiWebClient;
     private final OpenApiProperties openApiProperties;
 
     public OpenApiResponse fetch(
@@ -29,7 +29,7 @@ public class OpenApiClient {
 
         for (int attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
             try {
-                OpenApiResponse response = webClient.get()
+                OpenApiResponse response = openApiWebClient.get()
                     .uri(endpoint)
                     .accept(MediaType.APPLICATION_JSON)
                     .exchangeToMono(clientResponse -> {
