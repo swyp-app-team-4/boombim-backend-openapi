@@ -17,12 +17,12 @@ public class OfficialCongestionDao {
     /**
      * 하나의 혼잡도 데이터를 저장하고, 자동 생성된 PK(id)를 반환
      *
-     * @param poiCode           장소 코드
+     * @param officialPlaceId   공식 장소 ID
      * @param congestionLevelId 혼잡도 수준 ID
-     * @param populationMin     최소 인구
-     * @param populationMax     최대 인구
-     * @param observedAt        관측 시각
-     * @return 생성된 official_congestions 테이블의 id
+     * @param populationMin     최소 인구 (NULL 아님)
+     * @param populationMax     최대 인구 (NULL 아님)
+     * @param observedAt        관측 시각 (NULL 아님)
+     * @return 생성된 official_congestions.id
      */
     public Long save(
         Long officialPlaceId,
@@ -32,21 +32,42 @@ public class OfficialCongestionDao {
         LocalDateTime observedAt
     ) {
 
-        String sql = """
+        final String sql = """
             INSERT INTO official_congestions (
-                official_place_id, congestion_level_id, population_min, population_max, observed_at
-            ) VALUES (?, ?, ?, ?, ?)
+                official_place_id,
+                congestion_level_id,
+                population_min,
+                population_max,
+                observed_at,
+                density_per_m2
+            )
+            SELECT
+                ?, ?, ?, ?, ?,
+                CASE
+                    WHEN op.area_m2 IS NOT NULL AND op.area_m2 > 0
+                      THEN (COALESCE(?, ?)::double precision) / op.area_m2
+                    ELSE NULL
+                END
+            FROM official_places op
+            WHERE op.id = ?
             """;
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
-        jdbcTemplate.update(connection -> {
-            PreparedStatement ps = connection.prepareStatement(sql, new String[]{"id"});
+        jdbcTemplate.update(conn -> {
+            PreparedStatement ps = conn.prepareStatement(sql, new String[]{"id"});
+
             ps.setLong(1, officialPlaceId);
             ps.setInt(2, congestionLevelId);
-            ps.setObject(3, populationMin);
-            ps.setObject(4, populationMax);
+            ps.setLong(3, populationMin);
+            ps.setLong(4, populationMax);
             ps.setObject(5, observedAt);
+
+            ps.setLong(6, populationMax);
+            ps.setLong(7, populationMin);
+
+            ps.setLong(8, officialPlaceId);
+
             return ps;
         }, keyHolder);
 
@@ -54,7 +75,6 @@ public class OfficialCongestionDao {
         if (key == null) {
             throw new IllegalStateException("Failed to retrieve generated key for official_congestions.");
         }
-
         return key.longValue();
     }
 }
