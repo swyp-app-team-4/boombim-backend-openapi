@@ -3,24 +3,24 @@ package com.boombim.place.dto;
 import java.util.List;
 
 /**
- * 공식 장소 정보를 담는 DTO 클래스
+ * 공식 장소 정보를 담는 DTO
  *
  * <p>
- * Open API를 통해 받아오는 120곳의 장소 데이터를 기반으로<br> 장소명, POI 코드, 중심 위도, 중심 경도, 윤곽선 좌표 목록 포함
+ * Open API로 수집한 120곳의 장소 데이터를 기반으로 아래 필드를 담습니다.
  * </p>
  *
- * @param name               장소명 (ex. "강남 MICE 관광특구")
+ * @param name               장소명 (예: "강남 MICE 관광특구")
  * @param poiCode            장소 식별을 위한 POI 코드
- * @param address            행정 구역명 (ex. "강남구 삼성동")
- * @param areaM2             윤곽선 다각형 면적 (제곱미터)
- * @param centroidLatitude   중심의 위도 (윤곽선 다각형의 중심점 기준)
- * @param centroidLongitude  중심의 경도 (윤곽선 다각형의 중심점 기준)
- * @param polygonCoordinates 윤곽선 다각형을 구성하는 좌표 목록
+ * @param legalDong          법정동 (예: "강남구 삼성동")
+ * @param areaM2             윤곽선 다각형 면적(㎡)
+ * @param centroidLatitude   중심 위도(다각형 센트로이드)
+ * @param centroidLongitude  중심 경도(다각형 센트로이드)
+ * @param polygonCoordinates 윤곽선 다각형 좌표(경도,위도) 목록
  */
 public record OfficialPlaceDto(
     String name,
     String poiCode,
-    String address,
+    String legalDong,
     double areaM2,
     double centroidLatitude,
     double centroidLongitude,
@@ -30,7 +30,7 @@ public record OfficialPlaceDto(
     public static OfficialPlaceDto of(
         String name,
         String poiCode,
-        String address,
+        String legalDong,
         double areaM2,
         double centroidLatitude,
         double centroidLongitude,
@@ -39,12 +39,11 @@ public record OfficialPlaceDto(
         return new OfficialPlaceDto(
             name,
             poiCode,
-            address,
+            legalDong,
             areaM2,
             centroidLatitude,
             centroidLongitude,
             polygonCoordinates
         );
     }
-
 }
