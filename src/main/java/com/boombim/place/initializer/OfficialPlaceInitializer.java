@@ -74,14 +74,14 @@ public class OfficialPlaceInitializer implements CommandLineRunner {
             double centroidLon = centerLonLat.x;
             double centroidLat = centerLonLat.y;
 
-            // 주소(법정동) 역지오코딩
-            Optional<LegalDong> legal = kakaoRegionCodeService.getLegalDong(centroidLon, centroidLat);
-            String address = legal.map(LegalDong::display).orElse("알수없음");
+            // 법정동 역지오코딩
+            Optional<LegalDong> legalDongOpt = kakaoRegionCodeService.getLegalDong(centroidLon, centroidLat);
+            String legalDong = legalDongOpt.map(LegalDong::display).orElse("알수없음");
 
             batch.add(OfficialPlaceDto.of(
                 name,
                 poiCode,
-                address,
+                legalDong,
                 areaM2,
                 centroidLat,
                 centroidLon,
