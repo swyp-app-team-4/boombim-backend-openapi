@@ -28,5 +28,5 @@ kakao:
 official-congestion:
   purge:
     enabled: true
-    days: 7
+    days: 3
     batch-size: 10000
