@@ -24,3 +24,9 @@ kakao:
   base-url: https://dapi.kakao.com
   scheme: "KakaoAK "
   api-key: ${KAKAO_COORDINATE_TO_REGION_CODE_API_KEY}
+
+official-congestion:
+  purge:
+    enabled: true
+    days: 7
+    batch-size: 10000
