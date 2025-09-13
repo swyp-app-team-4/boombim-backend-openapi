@@ -18,7 +18,7 @@ public class OfficialCongestionPurgeScheduler {
     private final JdbcTemplate jdbcTemplate;
     private final OfficialCongestionPurgeProperties properties;
 
-    @Scheduled(cron = "0 40 16 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 5 00 * * *", zone = "Asia/Seoul")
     public void purgeTask() {
         if (!properties.enabled()) {
             log.info("[Purge] Disabled. Skip.");
