@@ -17,7 +17,7 @@ public class OfficialCongestionPurgeScheduler {
     private final JdbcTemplate jdbcTemplate;
     private final OfficialCongestionPurgeProperties properties;
 
-    @Scheduled(cron = "0 2 0 * * *")
+    @Scheduled(cron = "0 32 15 * * *")
     public void purgeTask() {
         if (!properties.enabled()) {
             log.info("[Purge] Disabled. Skip.");
