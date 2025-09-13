@@ -3,6 +3,7 @@ package com.boombim.congestion;
 import com.boombim.common.properties.OfficialCongestionPurgeProperties;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,15 +18,17 @@ public class OfficialCongestionPurgeScheduler {
     private final JdbcTemplate jdbcTemplate;
     private final OfficialCongestionPurgeProperties properties;
 
-    @Scheduled(cron = "0 54 15 * * *", zone = "Asia/Seoul")
+    @Scheduled(cron = "0 40 16 * * *", zone = "Asia/Seoul")
     public void purgeTask() {
         if (!properties.enabled()) {
             log.info("[Purge] Disabled. Skip.");
             return;
         }
 
-        // 서버 로컬 타임존 기준(프로덕션 KST 가정)
-        LocalDateTime cutoff = LocalDate.now().atStartOfDay().minusDays(properties.days());
+        LocalDateTime cutoff = LocalDate.now(ZoneId.of("Asia/Seoul"))
+            .atStartOfDay()
+            .minusDays(properties.days());
+
         int batch = properties.batchSize();
 
         log.info("[Purge] Start. cutoff={}, keepDays={}, batchSize={}", cutoff, properties.days(), batch);
@@ -42,7 +45,6 @@ public class OfficialCongestionPurgeScheduler {
         log.info("[Purge] Done.");
     }
 
-    // 부모 observed_at 기준으로 자식 먼저 제거
     private int deleteDemographicsInBatches(LocalDateTime cutoff, int batchSize) {
         String sql = """
             WITH victim AS (
@@ -50,7 +52,6 @@ public class OfficialCongestionPurgeScheduler {
               FROM official_congestion_demographics d
               JOIN official_congestions c ON c.id = d.official_congestion_id
               WHERE c.observed_at < ?
-              ORDER BY d.id
               LIMIT %d
             )
             DELETE FROM official_congestion_demographics x
@@ -68,20 +69,18 @@ public class OfficialCongestionPurgeScheduler {
         return total;
     }
 
-    // observed_at 기준 일반 테이블 삭제 (배치 분할)
     private int deleteByObservedAtInBatches(String table, String idCol, LocalDateTime cutoff, int batchSize) {
         String sql = """
             WITH victim AS (
               SELECT %s
               FROM %s
               WHERE observed_at < ?
-              ORDER BY %s
               LIMIT %d
             )
             DELETE FROM %s t
             USING victim v
             WHERE t.%s = v.%s
-            """.formatted(idCol, table, idCol, batchSize, table, idCol, idCol);
+            """.formatted(idCol, table, batchSize, table, idCol, idCol);
 
         int total = 0;
         while (true) {
