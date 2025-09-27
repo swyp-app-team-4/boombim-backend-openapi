@@ -14,7 +14,7 @@ public class OpenApiScheduler {
 
     private final OpenApiService openApiService;
 
-    @Scheduled(cron = "30 */30 * * * *")
+    @Scheduled(cron = "30 */5 * * * *")
     public void fetch() {
         log.info("[OpenApiScheduler] fetch 시작");
         openApiService.fetchAndSave();
