@@ -1,6 +1,7 @@
 package com.boombim.congestion.repository;
 
 import java.sql.PreparedStatement;
+import java.sql.Statement;
 import java.time.LocalDateTime;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -16,13 +17,6 @@ public class OfficialCongestionDao {
 
     /**
      * 하나의 혼잡도 데이터를 저장하고, 자동 생성된 PK(id)를 반환
-     *
-     * @param officialPlaceId   공식 장소 ID
-     * @param congestionLevelId 혼잡도 수준 ID
-     * @param populationMin     최소 인구 (NULL 아님)
-     * @param populationMax     최대 인구 (NULL 아님)
-     * @param observedAt        관측 시각 (NULL 아님)
-     * @return 생성된 official_congestions.id
      */
     public Long save(
         Long officialPlaceId,
@@ -45,7 +39,7 @@ public class OfficialCongestionDao {
                 ?, ?, ?, ?, ?,
                 CASE
                     WHEN op.area_m2 IS NOT NULL AND op.area_m2 > 0
-                      THEN (COALESCE(?, ?)::double precision) / op.area_m2
+                        THEN (COALESCE(?, ?) + 0.0) / op.area_m2
                     ELSE NULL
                 END
             FROM official_places op
@@ -54,8 +48,8 @@ public class OfficialCongestionDao {
 
         KeyHolder keyHolder = new GeneratedKeyHolder();
 
-        jdbcTemplate.update(conn -> {
-            PreparedStatement ps = conn.prepareStatement(sql, new String[]{"id"});
+        int affected = jdbcTemplate.update(conn -> {
+            PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
 
             ps.setLong(1, officialPlaceId);
             ps.setInt(2, congestionLevelId);
@@ -70,6 +64,10 @@ public class OfficialCongestionDao {
 
             return ps;
         }, keyHolder);
+
+        if (affected == 0) {
+            throw new IllegalStateException("Insert skipped: official_place_id=" + officialPlaceId + " not found.");
+        }
 
         Number key = keyHolder.getKey();
         if (key == null) {

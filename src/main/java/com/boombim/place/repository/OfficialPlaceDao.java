@@ -17,18 +17,17 @@ public class OfficialPlaceDao {
 
     public void initialize(List<OfficialPlaceDto> officialPlaces) {
 
-        // legal_dong, area_m2 포함 + 충돌 시 갱신
         String sql = """
             INSERT INTO official_places
               (name, poi_code, legal_dong, area_m2, centroid_latitude, centroid_longitude, polygon_coordinates)
-            VALUES (?, ?, ?, ?, ?, ?, ?::jsonb)
-            ON CONFLICT (poi_code) DO UPDATE
-            SET name                = EXCLUDED.name,
-                legal_dong          = EXCLUDED.legal_dong,
-                area_m2             = EXCLUDED.area_m2,
-                centroid_latitude   = EXCLUDED.centroid_latitude,
-                centroid_longitude  = EXCLUDED.centroid_longitude,
-                polygon_coordinates = EXCLUDED.polygon_coordinates
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+            ON DUPLICATE KEY UPDATE
+              name                = VALUES(name),
+              legal_dong          = VALUES(legal_dong),
+              area_m2             = VALUES(area_m2),
+              centroid_latitude   = VALUES(centroid_latitude),
+              centroid_longitude  = VALUES(centroid_longitude),
+              polygon_coordinates = VALUES(polygon_coordinates)
             """;
 
         List<Object[]> batchArgs = officialPlaces.stream()
@@ -38,11 +37,11 @@ public class OfficialPlaceDao {
                     return new Object[]{
                         p.name(),
                         p.poiCode(),
-                        p.legalDong(),          // 반드시 non-null (예: "알수없음")
-                        p.areaM2(),             // NOT NULL 권장
+                        p.legalDong(),
+                        p.areaM2(),
                         p.centroidLatitude(),
                         p.centroidLongitude(),
-                        json                    // jsonb 캐스팅은 SQL에서
+                        json
                     };
                 } catch (JsonProcessingException e) {
                     throw new RuntimeException("좌표 직렬화 실패", e);
