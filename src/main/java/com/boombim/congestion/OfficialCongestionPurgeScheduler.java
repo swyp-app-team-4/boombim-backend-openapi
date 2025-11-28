@@ -54,17 +54,18 @@ public class OfficialCongestionPurgeScheduler {
               WHERE c.observed_at < ?
               LIMIT %d
             )
-            DELETE FROM official_congestion_demographics x
-            USING victim v
-            WHERE x.id = v.id
+            DELETE x
+            FROM official_congestion_demographics x
+            JOIN victim v ON x.id = v.id
             """.formatted(batchSize);
 
         int total = 0;
         while (true) {
             int affected = jdbcTemplate.update(sql, cutoff);
             total += affected;
-            if (affected < batchSize)
+            if (affected < batchSize) {
                 break;
+            }
         }
         return total;
     }
@@ -77,17 +78,18 @@ public class OfficialCongestionPurgeScheduler {
               WHERE observed_at < ?
               LIMIT %d
             )
-            DELETE FROM %s t
-            USING victim v
-            WHERE t.%s = v.%s
+            DELETE t
+            FROM %s t
+            JOIN victim v ON t.%s = v.%s
             """.formatted(idCol, table, batchSize, table, idCol, idCol);
 
         int total = 0;
         while (true) {
             int affected = jdbcTemplate.update(sql, cutoff);
             total += affected;
-            if (affected < batchSize)
+            if (affected < batchSize) {
                 break;
+            }
         }
         return total;
     }
