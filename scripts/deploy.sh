@@ -6,7 +6,7 @@ AWS_REGION=ap-northeast-2
 ECR_REGISTRY=098072157131.dkr.ecr.ap-northeast-2.amazonaws.com
 IMAGE_NAME=boombim-scheduling
 CONTAINER_NAME=boombim-scheduling-app
-PARAM_PREFIX=/boombim
+PARAM_PREFIX=/boombim-api
 
 echo "[deploy] Use existing app directory..."
 cd "$APP_DIR"
