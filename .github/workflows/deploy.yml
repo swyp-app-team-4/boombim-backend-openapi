@@ -1,4 +1,4 @@
-name: boombim-openapi CI/CD
+ name: boombim-scheduling CI/CD
 
 on:
   push:
@@ -15,9 +15,9 @@ jobs:
 
     env:
       AWS_REGION: ap-northeast-2
-      ECR_REPOSITORY: boombim-openapi
-      CODEDEPLOY_APP_NAME: boombim-openapi
-      CODEDEPLOY_DEPLOYMENT_GROUP: boombim-openapi
+      ECR_REPOSITORY: boombim-scheduling
+      CODEDEPLOY_APP_NAME: boombim-scheduling
+      CODEDEPLOY_DEPLOYMENT_GROUP: boombim-scheduling
 
     steps:
       - name: Check out repository
