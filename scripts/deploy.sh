@@ -1,13 +1,14 @@
 #!/bin/bash
 set -e
 
-APP_DIR=/home/ec2-user/boombim-openapi
+APP_DIR=/home/ec2-user/boombim-scheduling
+mkdir -p "$APP_DIR"
 cd "$APP_DIR"
 
 AWS_REGION=ap-northeast-2
 ECR_REGISTRY=098072157131.dkr.ecr.ap-northeast-2.amazonaws.com
-IMAGE_NAME=boombim-openapi
-CONTAINER_NAME=boombim-openapi-app
+IMAGE_NAME=boombim-scheduling
+CONTAINER_NAME=boombim-scheduling-app
 
 echo "[deploy] Generate .env from SSM..."
 
@@ -27,7 +28,7 @@ PARAM_KEYS=(
 
 for key in "${PARAM_KEYS[@]}"; do
   value=$(aws ssm get-parameter \
-    --name "/boombim-openapi/${key}" \
+    --name "/boombim/${key}" \   # ← 여기만 /boombim/
     --with-decryption \
     --region "$AWS_REGION" \
     --query "Parameter.Value" \
