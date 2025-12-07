@@ -2,13 +2,14 @@
 set -e
 
 APP_DIR=/home/ec2-user/boombim-scheduling
-mkdir -p "$APP_DIR"
-cd "$APP_DIR"
-
 AWS_REGION=ap-northeast-2
 ECR_REGISTRY=098072157131.dkr.ecr.ap-northeast-2.amazonaws.com
 IMAGE_NAME=boombim-scheduling
 CONTAINER_NAME=boombim-scheduling-app
+PARAM_PREFIX=/boombim
+
+echo "[deploy] Use existing app directory..."
+cd "$APP_DIR"
 
 echo "[deploy] Generate .env from SSM..."
 
@@ -24,11 +25,12 @@ PARAM_KEYS=(
   KAKAO_COORDINATE_TO_REGION_CODE_API_KEY
 )
 
-: > .env
+> .env
+chmod 600 .env
 
 for key in "${PARAM_KEYS[@]}"; do
   value=$(aws ssm get-parameter \
-    --name "/boombim/${key}" \   # ← 여기만 /boombim/
+    --name "${PARAM_PREFIX}/${key}" \
     --with-decryption \
     --region "$AWS_REGION" \
     --query "Parameter.Value" \
