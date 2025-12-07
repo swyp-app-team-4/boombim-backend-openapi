@@ -27,9 +27,9 @@ public class OfficialPlaceImageService {
 
     private static final String PREFIX = "official-places";
     private static final String EXT = "jpg";
-    private static final int HOLD_MS = 60_000;
-    private static final int CONNECT_TIMEOUT_MS = 15_000;
-    private static final int READ_TIMEOUT_MS = 300_000;
+
+    private static final int CONNECT_TIMEOUT_MS = 10_000;
+    private static final int READ_TIMEOUT_MS = 30_000;
 
     private final S3Client s3;
     private final S3Properties s3Props;
@@ -73,16 +73,19 @@ public class OfficialPlaceImageService {
 
     private boolean s3Exists(String key) {
         try {
-            s3.headObject(HeadObjectRequest.builder()
-                .bucket(s3Props.bucketName())
-                .key(key)
-                .build());
+            s3.headObject(
+                HeadObjectRequest.builder()
+                    .bucket(s3Props.bucketName())
+                    .key(key)
+                    .build()
+            );
             return true;
         } catch (NoSuchKeyException e) {
             return false;
         } catch (S3Exception e) {
-            if (e.statusCode() == 404)
+            if (e.statusCode() == 404) {
                 return false;
+            }
             return false;
         } catch (Exception e) {
             return false;
@@ -112,7 +115,7 @@ public class OfficialPlaceImageService {
     private byte[] downloadHoldOnce(String areaNm) {
         String enc = UriUtils.encodePathSegment(areaNm, StandardCharsets.UTF_8);
         String url = "https://data.seoul.go.kr/SeoulRtd/images/hotspot/" + enc + ".jpg";
-        log.info("[HoldGET] ▶ {}", url);
+        log.info("[ImageFetch] ▶ {}", url);
 
         HttpURLConnection conn = null;
         try {
@@ -127,24 +130,20 @@ public class OfficialPlaceImageService {
             conn.setRequestProperty("Accept", "image/*,*/*;q=0.8");
             conn.setRequestProperty("Referer", "https://data.seoul.go.kr/");
 
+            long start = System.currentTimeMillis();
             conn.connect();
 
             int code = conn.getResponseCode();
             String ctype = conn.getContentType();
-            log.info("[HoldGET] ◀ status={} content-type={}", code, ctype);
+            log.info("[ImageFetch] ◀ status={} content-type={}", code, ctype);
 
             if (code / 100 != 2) {
                 try (InputStream es = conn.getErrorStream()) {
-                    if (es != null)
+                    if (es != null) {
                         es.readAllBytes();
+                    }
                 }
                 return null;
-            }
-
-            try {
-                Thread.sleep(HOLD_MS);
-            } catch (InterruptedException ie) {
-                Thread.currentThread().interrupt();
             }
 
             try (InputStream is = conn.getInputStream();
@@ -156,19 +155,22 @@ public class OfficialPlaceImageService {
                     baos.write(buf, 0, n);
                     total += n;
                     if (total % (1024 * 1024) < n) {
-                        log.info("[HoldGET] ...received ~{} KB", total / 1024);
+                        log.info("[ImageFetch] ...received ~{} KB", total / 1024);
                     }
                 }
                 byte[] out = baos.toByteArray();
-                log.info("[HoldGET] ✅ bytes={}", out.length);
+                long elapsed = System.currentTimeMillis() - start;
+                log.info("[ImageFetch] ✅ bytes={} elapsed={}ms", out.length, elapsed);
                 return out;
             }
 
         } catch (Exception e) {
+            log.warn("[ImageFetch] error url={} err={}", url, e.toString());
             return null;
         } finally {
-            if (conn != null)
+            if (conn != null) {
                 conn.disconnect();
+            }
         }
     }
 }
