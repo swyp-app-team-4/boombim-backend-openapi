@@ -1,4 +1,4 @@
- name: boombim-scheduling CI/CD
+name: boombim-scheduling CI/CD
 
 on:
   push:
